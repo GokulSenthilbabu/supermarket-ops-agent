@@ -17,10 +17,14 @@ from app.database import SessionLocal
 from app.models import Bill, BillItem, Product
 
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
-REPORT_DIR = BASE_DIR / "generated_reports"
+# Vercel filesystem is read-only.
+# /tmp is writable during a serverless invocation.
+REPORT_DIR = Path("/tmp/generated_reports")
 
-REPORT_DIR.mkdir(exist_ok=True)
+REPORT_DIR.mkdir(
+    parents=True,
+    exist_ok=True,
+)
 
 
 def get_weekly_data():
@@ -191,7 +195,10 @@ def create_sales_chart(data, path):
 
     plt.tight_layout()
 
-    plt.savefig(path, dpi=150)
+    plt.savefig(
+        path,
+        dpi=150,
+    )
 
     plt.close()
 
@@ -217,7 +224,10 @@ def create_top_products_chart(data, path):
             quantities,
         )
 
-        plt.title("Top Products by Quantity Sold")
+        plt.title(
+            "Top Products by Quantity Sold"
+        )
+
         plt.xlabel("Product")
         plt.ylabel("Quantity")
 
@@ -225,6 +235,7 @@ def create_top_products_chart(data, path):
             rotation=30,
             ha="right",
         )
+
     else:
         plt.text(
             0.5,
@@ -234,11 +245,15 @@ def create_top_products_chart(data, path):
             va="center",
             fontsize=14,
         )
+
         plt.axis("off")
 
     plt.tight_layout()
 
-    plt.savefig(path, dpi=150)
+    plt.savefig(
+        path,
+        dpi=150,
+    )
 
     plt.close()
 
@@ -277,11 +292,16 @@ def create_payment_chart(data, path):
             autopct="%1.1f%%",
         )
 
-        plt.title("Payment Method Distribution")
+        plt.title(
+            "Payment Method Distribution"
+        )
 
     plt.tight_layout()
 
-    plt.savefig(path, dpi=150)
+    plt.savefig(
+        path,
+        dpi=150,
+    )
 
     plt.close()
 
@@ -292,9 +312,20 @@ def generate_weekly_sales_deck():
     if not data["success"]:
         return data
 
-    sales_chart = REPORT_DIR / "weekly_sales_chart.png"
-    products_chart = REPORT_DIR / "top_products_chart.png"
-    payment_chart = REPORT_DIR / "payment_chart.png"
+    sales_chart = (
+        REPORT_DIR /
+        "weekly_sales_chart.png"
+    )
+
+    products_chart = (
+        REPORT_DIR /
+        "top_products_chart.png"
+    )
+
+    payment_chart = (
+        REPORT_DIR /
+        "payment_chart.png"
+    )
 
     create_sales_chart(
         data,
@@ -313,6 +344,7 @@ def generate_weekly_sales_deck():
 
     presentation = Presentation()
 
+    # Slide 1
     slide = presentation.slides.add_slide(
         presentation.slide_layouts[0]
     )
@@ -326,11 +358,14 @@ def generate_weekly_sales_deck():
         f"{data['week_end']}"
     )
 
+    # Slide 2
     slide = presentation.slides.add_slide(
         presentation.slide_layouts[5]
     )
 
-    slide.shapes.title.text = "Sales Overview"
+    slide.shapes.title.text = (
+        "Sales Overview"
+    )
 
     textbox = slide.shapes.add_textbox(
         Inches(1),
@@ -361,11 +396,14 @@ def generate_weekly_sales_deck():
         paragraph.text = line
         paragraph.font.size = Pt(22)
 
+    # Slide 3
     slide = presentation.slides.add_slide(
         presentation.slide_layouts[5]
     )
 
-    slide.shapes.title.text = "Daily Sales"
+    slide.shapes.title.text = (
+        "Daily Sales"
+    )
 
     slide.shapes.add_picture(
         str(sales_chart),
@@ -374,11 +412,14 @@ def generate_weekly_sales_deck():
         width=Inches(8),
     )
 
+    # Slide 4
     slide = presentation.slides.add_slide(
         presentation.slide_layouts[5]
     )
 
-    slide.shapes.title.text = "Top Products"
+    slide.shapes.title.text = (
+        "Top Products"
+    )
 
     slide.shapes.add_picture(
         str(products_chart),
@@ -387,11 +428,14 @@ def generate_weekly_sales_deck():
         width=Inches(8),
     )
 
+    # Slide 5
     slide = presentation.slides.add_slide(
         presentation.slide_layouts[5]
     )
 
-    slide.shapes.title.text = "Payment Methods"
+    slide.shapes.title.text = (
+        "Payment Methods"
+    )
 
     slide.shapes.add_picture(
         str(payment_chart),
@@ -400,11 +444,14 @@ def generate_weekly_sales_deck():
         width=Inches(6),
     )
 
+    # Slide 6
     slide = presentation.slides.add_slide(
         presentation.slide_layouts[5]
     )
 
-    slide.shapes.title.text = "Business Insights"
+    slide.shapes.title.text = (
+        "Business Insights"
+    )
 
     textbox = slide.shapes.add_textbox(
         Inches(1),
@@ -447,7 +494,8 @@ def generate_weekly_sales_deck():
 
     if not insights:
         insights.append(
-            "No finalized sales were recorded during this period."
+            "No finalized sales were recorded "
+            "during this period."
         )
 
     for index, insight in enumerate(insights):
@@ -461,9 +509,10 @@ def generate_weekly_sales_deck():
         paragraph.text = insight
         paragraph.font.size = Pt(20)
 
+    # Final PPTX
     output_path = (
-        REPORT_DIR
-        / "weekly_sales_analysis.pptx"
+        REPORT_DIR /
+        "weekly_sales_analysis.pptx"
     )
 
     presentation.save(output_path)
