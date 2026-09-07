@@ -1,7 +1,11 @@
 import os
+import json
+import asyncio
 
+from http.server import BaseHTTPRequestHandler
 from dotenv import load_dotenv
 from telegram import Bot
+
 from app.agent import run_agent
 
 load_dotenv()
@@ -9,55 +13,58 @@ load_dotenv()
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
 
-async def handler(request):
-    if request.method != "POST":
-        return {
-            "statusCode": 405,
-            "body": "Method Not Allowed"
-        }
+async def process_message(chat_id, text):
+    response = run_agent(
+        text,
+        user_id=str(chat_id)
+    )
 
-    try:
-        update = await request.json()
+    bot = Bot(token=TOKEN)
 
-        message = update.get("message")
+    await bot.send_message(
+        chat_id=chat_id,
+        text=response
+    )
 
-        if not message:
-            return {
-                "statusCode": 200,
-                "body": "OK"
-            }
+    await bot.shutdown()
 
-        text = message.get("text")
 
-        if not text:
-            return {
-                "statusCode": 200,
-                "body": "OK"
-            }
+class handler(BaseHTTPRequestHandler):
 
-        chat_id = str(message["chat"]["id"])
+    def do_POST(self):
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(length)
 
-        response = run_agent(
-            text,
-            user_id=chat_id
-        )
+            update = json.loads(body)
 
-        bot = Bot(token=TOKEN)
+            message = update.get("message")
 
-        await bot.send_message(
-            chat_id=chat_id,
-            text=response
-        )
+            if message:
+                text = message.get("text")
 
-        return {
-            "statusCode": 200,
-            "body": "OK"
-        }
+                if text:
+                    chat_id = message["chat"]["id"]
 
-    except Exception as exc:
-        print(f"Webhook error: {exc}")
+                    asyncio.run(
+                        process_message(chat_id, text)
+                    )
 
-        return {
-            "statusCode": 500,
-            "body": "Internal Server Error"
-        }
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain")
+            self.end_headers()
+            self.wfile.write(b"OK")
+
+        except Exception as exc:
+            print(f"Webhook error: {exc}")
+
+            self.send_response(500)
+            self.send_header("Content-Type", "text/plain")
+            self.end_headers()
+            self.wfile.write(b"Internal Server Error")
+
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-Type", "text/plain")
+        self.end_headers()
+        self.wfile.write(b"Supermarket Ops Agent is running")
