@@ -52,7 +52,6 @@ python-dotenv==1.2.3
 python-multipart==0.0.32
 python-pptx==1.0.2
 python-telegram-bot==22.8
-pywin32==312
 referencing==0.37.0
 reportlab==5.0.1
 requests==2.34.2
