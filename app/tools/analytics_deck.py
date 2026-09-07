@@ -28,7 +28,6 @@ def get_weekly_data():
 
     try:
         today = date.today()
-
         week_start = today - timedelta(days=6)
 
         start_datetime = datetime.combine(
@@ -63,7 +62,6 @@ def get_weekly_data():
             daily_sales[current_day.isoformat()] = Decimal("0")
 
         for bill in bills:
-
             amount = Decimal(
                 str(bill.grand_total or 0)
             )
@@ -95,10 +93,6 @@ def get_weekly_data():
                     daily_sales[
                         bill_date.isoformat()
                     ] += amount
-
-        # ---------------------------------------------
-        # TOP PRODUCTS
-        # ---------------------------------------------
 
         rows = db.execute(
             select(
@@ -217,19 +211,30 @@ def create_top_products_chart(data, path):
 
     plt.figure(figsize=(10, 5))
 
-    plt.bar(
-        names,
-        quantities,
-    )
+    if names:
+        plt.bar(
+            names,
+            quantities,
+        )
 
-    plt.title("Top Products by Quantity Sold")
-    plt.xlabel("Product")
-    plt.ylabel("Quantity")
+        plt.title("Top Products by Quantity Sold")
+        plt.xlabel("Product")
+        plt.ylabel("Quantity")
 
-    plt.xticks(
-        rotation=30,
-        ha="right",
-    )
+        plt.xticks(
+            rotation=30,
+            ha="right",
+        )
+    else:
+        plt.text(
+            0.5,
+            0.5,
+            "No product sales data available",
+            ha="center",
+            va="center",
+            fontsize=14,
+        )
+        plt.axis("off")
 
     plt.tight_layout()
 
@@ -253,13 +258,26 @@ def create_payment_chart(data, path):
 
     plt.figure(figsize=(7, 7))
 
-    plt.pie(
-        values,
-        labels=labels,
-        autopct="%1.1f%%",
-    )
+    if sum(values) == 0:
+        plt.text(
+            0.5,
+            0.5,
+            "No payment data available",
+            ha="center",
+            va="center",
+            fontsize=14,
+        )
 
-    plt.title("Payment Method Distribution")
+        plt.axis("off")
+
+    else:
+        plt.pie(
+            values,
+            labels=labels,
+            autopct="%1.1f%%",
+        )
+
+        plt.title("Payment Method Distribution")
 
     plt.tight_layout()
 
@@ -295,10 +313,6 @@ def generate_weekly_sales_deck():
 
     presentation = Presentation()
 
-    # ---------------------------------------------
-    # SLIDE 1
-    # ---------------------------------------------
-
     slide = presentation.slides.add_slide(
         presentation.slide_layouts[0]
     )
@@ -311,10 +325,6 @@ def generate_weekly_sales_deck():
         f"{data['week_start']} to "
         f"{data['week_end']}"
     )
-
-    # ---------------------------------------------
-    # SLIDE 2
-    # ---------------------------------------------
 
     slide = presentation.slides.add_slide(
         presentation.slide_layouts[5]
@@ -351,10 +361,6 @@ def generate_weekly_sales_deck():
         paragraph.text = line
         paragraph.font.size = Pt(22)
 
-    # ---------------------------------------------
-    # SLIDE 3
-    # ---------------------------------------------
-
     slide = presentation.slides.add_slide(
         presentation.slide_layouts[5]
     )
@@ -367,10 +373,6 @@ def generate_weekly_sales_deck():
         Inches(1.3),
         width=Inches(8),
     )
-
-    # ---------------------------------------------
-    # SLIDE 4
-    # ---------------------------------------------
 
     slide = presentation.slides.add_slide(
         presentation.slide_layouts[5]
@@ -385,10 +387,6 @@ def generate_weekly_sales_deck():
         width=Inches(8),
     )
 
-    # ---------------------------------------------
-    # SLIDE 5
-    # ---------------------------------------------
-
     slide = presentation.slides.add_slide(
         presentation.slide_layouts[5]
     )
@@ -401,10 +399,6 @@ def generate_weekly_sales_deck():
         Inches(1.3),
         width=Inches(6),
     )
-
-    # ---------------------------------------------
-    # SLIDE 6
-    # ---------------------------------------------
 
     slide = presentation.slides.add_slide(
         presentation.slide_layouts[5]
@@ -437,7 +431,10 @@ def generate_weekly_sales_deck():
             f"₹{data['total_sales'] / max(data['bill_count'], 1):,.2f}"
         )
 
-    if data["upi"] > data["cash"] and data["upi"] > data["card"]:
+    if (
+        data["upi"] > data["cash"]
+        and data["upi"] > data["card"]
+    ):
         insights.append(
             "UPI is the dominant payment method."
         )
@@ -463,10 +460,6 @@ def generate_weekly_sales_deck():
 
         paragraph.text = insight
         paragraph.font.size = Pt(20)
-
-    # ---------------------------------------------
-    # SAVE
-    # ---------------------------------------------
 
     output_path = (
         REPORT_DIR
